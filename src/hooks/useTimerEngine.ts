@@ -155,6 +155,7 @@ export function useTimerEngine() {
         setTimeRemaining(duration);
         setTotalTime(duration);
         toast({ title: "🎉 Long break!", description: "Great work! Take a longer rest." });
+        sendNotification("🎉 Long break!", "Great work! Take a longer rest.");
       } else {
         const nextMode = "shortBreak";
         const duration = getModeDuration(nextMode, settings);
@@ -162,6 +163,7 @@ export function useTimerEngine() {
         setTimeRemaining(duration);
         setTotalTime(duration);
         toast({ title: "☕ Short break", description: "Stretch, breathe, relax." });
+        sendNotification("☕ Short break", "Stretch, breathe, relax.");
       }
     } else {
       const duration = getModeDuration("focus", settings);
@@ -169,6 +171,7 @@ export function useTimerEngine() {
       setTimeRemaining(duration);
       setTotalTime(duration);
       toast({ title: "🎯 Focus time", description: "Let's get back to work!" });
+      sendNotification("🎯 Focus time", "Let's get back to work!");
     }
   }, [mode, completedSessions, settings]);
 
