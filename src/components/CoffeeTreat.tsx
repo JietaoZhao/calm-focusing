@@ -20,7 +20,7 @@ const CoffeeTreat = () => {
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-center">☕ Treat the Author</DialogTitle>
+          <DialogTitle className="text-center">💷 Treat the Author</DialogTitle>
           <DialogDescription className="text-center">
             If Calm helps you stay focused and hydrated, consider buying the author a coffee as a small thank you.
           </DialogDescription>
