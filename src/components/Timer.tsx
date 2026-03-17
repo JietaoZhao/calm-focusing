@@ -1,7 +1,14 @@
-import { useEffect, useCallback } from "react";
+import { useState } from "react";
 import TimerRing from "./TimerRing";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+} from "@/components/ui/alert-dialog";
 
 export type TimerMode = "focus" | "shortBreak" | "longBreak";
 
@@ -12,10 +19,13 @@ interface TimerProps {
   isRunning: boolean;
   completedSessions: number;
   sessionsBeforeLong: number;
+  pauseCount: number;
+  pauseReasons: string[];
   onStart: () => void;
   onPause: () => void;
   onReset: () => void;
   onSkip: () => void;
+  onPauseWithReason: (reason: string) => void;
 }
 
 const modeLabels: Record<TimerMode, string> = {
@@ -36,6 +46,13 @@ const formatTime = (seconds: number) => {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 };
 
+const INTERRUPTION_OPTIONS = [
+  { label: "Restroom Break", reason: "", isRestroom: true },
+  { label: "Virtual Meeting", reason: "Paused for virtual meeting" },
+  { label: "In-Person Meeting", reason: "Paused for in-person meeting" },
+  { label: "Other Interruption", reason: "Paused for other interruption" },
+];
+
 const Timer = ({
   mode,
   timeRemaining,
@@ -43,13 +60,34 @@ const Timer = ({
   isRunning,
   completedSessions,
   sessionsBeforeLong,
+  pauseCount,
+  pauseReasons,
   onStart,
   onPause,
   onReset,
   onSkip,
+  onPauseWithReason,
 }: TimerProps) => {
+  const [showDialog, setShowDialog] = useState(false);
   const progress = totalTime > 0 ? timeRemaining / totalTime : 0;
   const color = modeColors[mode];
+
+  const handlePauseClick = () => {
+    if (mode === "focus" && pauseCount >= 2) {
+      setShowDialog(true);
+    } else {
+      onPause();
+    }
+  };
+
+  const handleInterruption = (option: typeof INTERRUPTION_OPTIONS[number]) => {
+    setShowDialog(false);
+    if (option.isRestroom) {
+      // Timer keeps running — no pause
+      return;
+    }
+    onPauseWithReason(option.reason);
+  };
 
   // Session dots
   const dots = Array.from({ length: sessionsBeforeLong }, (_, i) => (
@@ -72,7 +110,28 @@ const Timer = ({
         <span className="text-5xl font-light text-foreground tabular-nums tracking-wider">
           {formatTime(timeRemaining)}
         </span>
+
+        {/* Focusing Helper — pause reasons */}
+        {pauseReasons.length > 0 && (
+          <div className="mt-2 text-center max-w-[160px]">
+            <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground font-medium">
+              Focusing Helper
+            </span>
+            {pauseReasons.map((reason, i) => (
+              <p key={i} className="text-[9px] text-muted-foreground leading-tight mt-0.5">
+                · {reason}
+              </p>
+            ))}
+          </div>
+        )}
       </TimerRing>
+
+      {/* Pause count indicator */}
+      {mode === "focus" && pauseCount > 0 && (
+        <p className="text-[10px] text-muted-foreground">
+          Paused {pauseCount} time{pauseCount !== 1 ? "s" : ""}
+        </p>
+      )}
 
       {/* Session dots */}
       <div className="flex gap-2">{dots}</div>
@@ -88,7 +147,7 @@ const Timer = ({
           <RotateCcw className="w-4 h-4" />
         </Button>
         <Button
-          onClick={isRunning ? onPause : onStart}
+          onClick={isRunning ? handlePauseClick : onStart}
           className="rounded-full w-14 h-14 bg-primary hover:bg-primary/90 text-primary-foreground"
           size="icon"
         >
@@ -103,6 +162,35 @@ const Timer = ({
           <SkipForward className="w-4 h-4" />
         </Button>
       </div>
+
+      {/* Interruption Dialog */}
+      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <AlertDialogContent className="max-w-xs">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Focusing Helper</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              What difficulties did you encounter?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2 mt-2">
+            {INTERRUPTION_OPTIONS.map((option) => (
+              <Button
+                key={option.label}
+                variant={option.isRestroom ? "ghost" : "outline"}
+                className="w-full justify-start text-sm"
+                onClick={() => handleInterruption(option)}
+              >
+                {option.label}
+                {option.isRestroom && (
+                  <span className="ml-auto text-[10px] text-muted-foreground">
+                    No pause needed
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

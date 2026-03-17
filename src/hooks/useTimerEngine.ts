@@ -60,6 +60,8 @@ export function useTimerEngine() {
   const [completedSessions, setCompletedSessions] = useState(0);
   const [waterDrank, setWaterDrank] = useState(loadWater);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [pauseCount, setPauseCount] = useState(0);
+  const [pauseReasons, setPauseReasons] = useState<string[]>([]);
 
   // Persist settings
   useEffect(() => {
@@ -123,6 +125,8 @@ export function useTimerEngine() {
     } catch {}
 
     setIsRunning(false);
+    setPauseCount(0);
+    setPauseReasons([]);
 
     if (mode === "focus") {
       const newCompleted = completedSessions + 1;
@@ -162,12 +166,22 @@ export function useTimerEngine() {
   }, [isRunning, mode]);
 
   const start = () => setIsRunning(true);
-  const pause = () => setIsRunning(false);
+  const pause = () => {
+    setPauseCount((c) => c + 1);
+    setIsRunning(false);
+  };
   const reset = () => {
     setIsRunning(false);
+    setPauseCount(0);
+    setPauseReasons([]);
     const duration = getModeDuration(mode, settings);
     setTimeRemaining(duration);
     setTotalTime(duration);
+  };
+  const pauseWithReason = (reason: string) => {
+    setPauseCount((c) => c + 1);
+    setPauseReasons((prev) => [...prev, reason]);
+    setIsRunning(false);
   };
   const skip = () => {
     setIsRunning(false);
@@ -189,11 +203,14 @@ export function useTimerEngine() {
     isRunning,
     completedSessions,
     waterDrank,
+    pauseCount,
+    pauseReasons,
     start,
     pause,
     reset,
     skip,
     drinkWater,
+    pauseWithReason,
   };
 }
 
