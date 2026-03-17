@@ -373,7 +373,6 @@ export function useTimerEngine() {
     saveTimerState(null);
     handleTimerEnd();
   };
-  };
 
   const drinkWater = () => {
     const next = waterDrank + 1;
