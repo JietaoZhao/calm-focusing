@@ -2,6 +2,7 @@ import Timer from "@/components/Timer";
 import Settings from "@/components/Settings";
 import WaterReminder from "@/components/WaterReminder";
 import CoffeeTreat from "@/components/CoffeeTreat";
+import SuggestionForm from "@/components/SuggestionForm";
 import { useTimerEngine } from "@/hooks/useTimerEngine";
 
 const Index = () => {
@@ -56,6 +57,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="flex flex-col items-center gap-3 pt-8">
         <CoffeeTreat />
+        <SuggestionForm />
         <p className="text-[10px] text-muted-foreground tracking-wider">
           Built with intention
         </p>
