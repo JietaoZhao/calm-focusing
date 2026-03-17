@@ -187,6 +187,7 @@ export function useTimerEngine() {
   const handleTimerEnd = useCallback(() => {
     playEndSound();
     setIsRunning(false);
+    saveTimerState(null);
     setPauseCount(0);
     setPauseReasons([]);
 
