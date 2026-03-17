@@ -108,21 +108,37 @@ export function useTimerEngine() {
     return () => clearInterval(timer);
   }, [settings.waterEnabled, isRunning, mode, waterDrank, settings.waterGlasses]);
 
-  const handleTimerEnd = useCallback(() => {
-    // Play notification sound
+  const playEndSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 660;
-      osc.type = "sine";
-      gain.gain.value = 0.3;
-      osc.start();
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.5);
-      osc.stop(ctx.currentTime + 1.5);
+      const now = ctx.currentTime;
+
+      // Pleasant two-tone chime
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0, now + i * 0.3);
+        gain.gain.linearRampToValueAtTime(0.25, now + i * 0.3 + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.3 + 1.2);
+        osc.start(now + i * 0.3);
+        osc.stop(now + i * 0.3 + 1.2);
+      });
     } catch {}
+  }, []);
+
+  const sendNotification = useCallback((title: string, body: string) => {
+    if (Notification.permission === "granted") {
+      new Notification(title, { body, icon: "/favicon.ico" });
+    }
+  }, []);
+
+  const handleTimerEnd = useCallback(() => {
+    playEndSound();
 
     setIsRunning(false);
     setPauseCount(0);
@@ -139,6 +155,7 @@ export function useTimerEngine() {
         setTimeRemaining(duration);
         setTotalTime(duration);
         toast({ title: "🎉 Long break!", description: "Great work! Take a longer rest." });
+        sendNotification("🎉 Long break!", "Great work! Take a longer rest.");
       } else {
         const nextMode = "shortBreak";
         const duration = getModeDuration(nextMode, settings);
@@ -146,6 +163,7 @@ export function useTimerEngine() {
         setTimeRemaining(duration);
         setTotalTime(duration);
         toast({ title: "☕ Short break", description: "Stretch, breathe, relax." });
+        sendNotification("☕ Short break", "Stretch, breathe, relax.");
       }
     } else {
       const duration = getModeDuration("focus", settings);
@@ -153,6 +171,7 @@ export function useTimerEngine() {
       setTimeRemaining(duration);
       setTotalTime(duration);
       toast({ title: "🎯 Focus time", description: "Let's get back to work!" });
+      sendNotification("🎯 Focus time", "Let's get back to work!");
     }
   }, [mode, completedSessions, settings]);
 
@@ -165,7 +184,13 @@ export function useTimerEngine() {
     }
   }, [isRunning, mode]);
 
-  const start = () => setIsRunning(true);
+  const start = () => {
+    // Request notification permission on first start
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    setIsRunning(true);
+  };
   const pause = () => {
     setPauseCount((c) => c + 1);
     setIsRunning(false);
