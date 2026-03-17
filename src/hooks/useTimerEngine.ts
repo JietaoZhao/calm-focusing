@@ -166,12 +166,22 @@ export function useTimerEngine() {
   }, [isRunning, mode]);
 
   const start = () => setIsRunning(true);
-  const pause = () => setIsRunning(false);
+  const pause = () => {
+    setPauseCount((c) => c + 1);
+    setIsRunning(false);
+  };
   const reset = () => {
     setIsRunning(false);
+    setPauseCount(0);
+    setPauseReasons([]);
     const duration = getModeDuration(mode, settings);
     setTimeRemaining(duration);
     setTotalTime(duration);
+  };
+  const pauseWithReason = (reason: string) => {
+    setPauseCount((c) => c + 1);
+    setPauseReasons((prev) => [...prev, reason]);
+    setIsRunning(false);
   };
   const skip = () => {
     setIsRunning(false);
