@@ -51,6 +51,13 @@ function getModeDuration(mode: TimerMode, settings: SettingsData): number {
   }
 }
 
+function calculateWorkMinutes(settings: SettingsData): number {
+  const [sh, sm] = settings.workStart.split(":").map(Number);
+  const [eh, em] = settings.workEnd.split(":").map(Number);
+  const totalMin = (eh * 60 + em) - (sh * 60 + sm);
+  return totalMin - settings.lunchDuration;
+}
+
 export function useTimerEngine() {
   const [settings, setSettings] = useState<SettingsData>(loadSettings);
   const [mode, setMode] = useState<TimerMode>("focus");
@@ -59,79 +66,33 @@ export function useTimerEngine() {
   const [isRunning, setIsRunning] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [waterDrank, setWaterDrank] = useState(loadWater);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [pauseCount, setPauseCount] = useState(0);
   const [pauseReasons, setPauseReasons] = useState<string[]>([]);
+
+  // Wall-clock refs for accurate background timing
+  const endTimeRef = useRef<number>(0); // timestamp when timer should end
+  const waterLastReminderRef = useRef<number>(Date.now());
+
+  // Use refs for values needed in callbacks to avoid stale closures
+  const modeRef = useRef(mode);
+  const completedSessionsRef = useRef(completedSessions);
+  const settingsRef = useRef(settings);
+  const waterDrankRef = useRef(waterDrank);
+
+  useEffect(() => { modeRef.current = mode; }, [mode]);
+  useEffect(() => { completedSessionsRef.current = completedSessions; }, [completedSessions]);
+  useEffect(() => { settingsRef.current = settings; }, [settings]);
+  useEffect(() => { waterDrankRef.current = waterDrank; }, [waterDrank]);
 
   // Persist settings
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
-  // Timer countdown
-  useEffect(() => {
-    if (!isRunning) return;
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleTimerEnd();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isRunning, mode, completedSessions]);
-
-  // Water reminder interval
-  useEffect(() => {
-    if (!settings.waterEnabled || !isRunning || mode !== "focus") return;
-    
-    // Calculate interval: distribute reminders across work period
-    const workMinutes = settings.mode === "schedule"
-      ? calculateWorkMinutes(settings)
-      : settings.focusMinutes * settings.sessionsBeforeLong * 2; // rough estimate
-    
-    const intervalMs = (workMinutes / settings.waterGlasses) * 60 * 1000;
-    if (intervalMs < 60000) return; // min 1 min
-
-    const timer = setInterval(() => {
-      if (waterDrank < settings.waterGlasses) {
-        // Gentle water drop sound
-        try {
-          const ctx = new AudioContext();
-          const now = ctx.currentTime;
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.frequency.setValueAtTime(880, now);
-          osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
-          osc.type = "sine";
-          gain.gain.setValueAtTime(0.15, now);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
-          osc.start(now);
-          osc.stop(now + 0.6);
-        } catch {}
-
-        toast({
-          title: "💧 Time to hydrate!",
-          description: `Glass ${waterDrank + 1} of ${settings.waterGlasses}`,
-        });
-        sendNotification("💧 Time to hydrate!", `Glass ${waterDrank + 1} of ${settings.waterGlasses}`);
-      }
-    }, intervalMs);
-
-    return () => clearInterval(timer);
-  }, [settings.waterEnabled, isRunning, mode, waterDrank, settings.waterGlasses]);
-
   const playEndSound = useCallback(() => {
     try {
       const ctx = new AudioContext();
       const now = ctx.currentTime;
-
-      // Pleasant two-tone chime
       const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
       notes.forEach((freq, i) => {
         const osc = ctx.createOscillator();
@@ -149,26 +110,47 @@ export function useTimerEngine() {
     } catch {}
   }, []);
 
+  const playWaterSound = useCallback(() => {
+    try {
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc.start(now);
+      osc.stop(now + 0.6);
+    } catch {}
+  }, []);
+
   const sendNotification = useCallback((title: string, body: string) => {
-    if (Notification.permission === "granted") {
+    if ("Notification" in window && Notification.permission === "granted") {
       new Notification(title, { body, icon: "/favicon.ico" });
     }
   }, []);
 
   const handleTimerEnd = useCallback(() => {
     playEndSound();
-
     setIsRunning(false);
     setPauseCount(0);
     setPauseReasons([]);
 
-    if (mode === "focus") {
-      const newCompleted = completedSessions + 1;
+    const currentMode = modeRef.current;
+    const currentCompleted = completedSessionsRef.current;
+    const currentSettings = settingsRef.current;
+
+    if (currentMode === "focus") {
+      const newCompleted = currentCompleted + 1;
       setCompletedSessions(newCompleted);
 
-      if (newCompleted % settings.sessionsBeforeLong === 0) {
+      if (newCompleted % currentSettings.sessionsBeforeLong === 0) {
         const nextMode = "longBreak";
-        const duration = getModeDuration(nextMode, settings);
+        const duration = getModeDuration(nextMode, currentSettings);
         setMode(nextMode);
         setTimeRemaining(duration);
         setTotalTime(duration);
@@ -176,7 +158,7 @@ export function useTimerEngine() {
         sendNotification("🎉 Long break!", "Great work! Take a longer rest.");
       } else {
         const nextMode = "shortBreak";
-        const duration = getModeDuration(nextMode, settings);
+        const duration = getModeDuration(nextMode, currentSettings);
         setMode(nextMode);
         setTimeRemaining(duration);
         setTotalTime(duration);
@@ -184,14 +166,99 @@ export function useTimerEngine() {
         sendNotification("☕ Short break", "Stretch, breathe, relax.");
       }
     } else {
-      const duration = getModeDuration("focus", settings);
+      const duration = getModeDuration("focus", currentSettings);
       setMode("focus");
       setTimeRemaining(duration);
       setTotalTime(duration);
       toast({ title: "🎯 Focus time", description: "Let's get back to work!" });
       sendNotification("🎯 Focus time", "Let's get back to work!");
     }
-  }, [mode, completedSessions, settings]);
+  }, [playEndSound, sendNotification]);
+
+  // ─── Wall-clock timer: survives background tab throttling ───
+  useEffect(() => {
+    if (!isRunning) return;
+
+    // Set the absolute end time when we start running
+    endTimeRef.current = Date.now() + timeRemaining * 1000;
+
+    const tick = () => {
+      const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setTimeRemaining(0);
+        handleTimerEnd();
+      } else {
+        setTimeRemaining(remaining);
+      }
+    };
+
+    // Use 1s interval but calculate from wall clock each tick
+    const interval = setInterval(tick, 1000);
+
+    // Also tick on visibility change (user returns to tab)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        tick();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+    // Only re-run when isRunning changes (not timeRemaining — that's handled by wall clock)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning, handleTimerEnd]);
+
+  // ─── Water reminder: independent wall-clock scheduler ───
+  useEffect(() => {
+    if (!settings.waterEnabled) return;
+
+    // Calculate interval between reminders
+    const workMinutes = settings.mode === "schedule"
+      ? calculateWorkMinutes(settings)
+      : settings.focusMinutes * settings.sessionsBeforeLong * 2;
+
+    const intervalMs = (workMinutes / settings.waterGlasses) * 60 * 1000;
+    if (intervalMs < 60000) return; // min 1 min
+
+    // Reset the last reminder time when settings change
+    waterLastReminderRef.current = Date.now();
+
+    const check = () => {
+      const now = Date.now();
+      const elapsed = now - waterLastReminderRef.current;
+      const currentWater = waterDrankRef.current;
+      const currentSettings = settingsRef.current;
+
+      if (elapsed >= intervalMs && currentWater < currentSettings.waterGlasses) {
+        waterLastReminderRef.current = now;
+        playWaterSound();
+        toast({
+          title: "💧 Time to hydrate!",
+          description: `Glass ${currentWater + 1} of ${currentSettings.waterGlasses}`,
+        });
+        sendNotification("💧 Time to hydrate!", `Glass ${currentWater + 1} of ${currentSettings.waterGlasses}`);
+      }
+    };
+
+    // Check every 30s (cheap check against wall clock)
+    const interval = setInterval(check, 30000);
+
+    // Also check on visibility change (catches reminders missed while in background)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        check();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [settings.waterEnabled, settings.waterGlasses, settings.mode, settings.focusMinutes, settings.sessionsBeforeLong, playWaterSound, sendNotification]);
 
   const updateSettings = useCallback((newSettings: SettingsData) => {
     setSettings(newSettings);
@@ -203,16 +270,17 @@ export function useTimerEngine() {
   }, [isRunning, mode]);
 
   const start = () => {
-    // Request notification permission on first start
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
     setIsRunning(true);
   };
+
   const pause = () => {
     setPauseCount((c) => c + 1);
     setIsRunning(false);
   };
+
   const reset = () => {
     setIsRunning(false);
     setPauseCount(0);
@@ -221,11 +289,13 @@ export function useTimerEngine() {
     setTimeRemaining(duration);
     setTotalTime(duration);
   };
+
   const pauseWithReason = (reason: string) => {
     setPauseCount((c) => c + 1);
     setPauseReasons((prev) => [...prev, reason]);
     setIsRunning(false);
   };
+
   const skip = () => {
     setIsRunning(false);
     handleTimerEnd();
@@ -255,11 +325,4 @@ export function useTimerEngine() {
     drinkWater,
     pauseWithReason,
   };
-}
-
-function calculateWorkMinutes(settings: SettingsData): number {
-  const [sh, sm] = settings.workStart.split(":").map(Number);
-  const [eh, em] = settings.workEnd.split(":").map(Number);
-  const totalMin = (eh * 60 + em) - (sh * 60 + sm);
-  return totalMin - settings.lunchDuration;
 }
