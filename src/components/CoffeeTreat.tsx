@@ -45,7 +45,7 @@ const CoffeeTreat = () => {
               className="rounded-full bg-primary text-primary-foreground"
               onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
-              ☕☕☕ $10
+              💷💷💷 £10
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">Every sip counts 💚</p>
