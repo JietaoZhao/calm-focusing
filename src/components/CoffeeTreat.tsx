@@ -20,7 +20,7 @@ const CoffeeTreat = () => {
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-center">☕ Treat the Author</DialogTitle>
+          <DialogTitle className="text-center">💷 Treat the Author</DialogTitle>
           <DialogDescription className="text-center">
             If Calm helps you stay focused and hydrated, consider buying the author a coffee as a small thank you.
           </DialogDescription>
@@ -32,20 +32,20 @@ const CoffeeTreat = () => {
               className="rounded-full border-border"
               onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
-              ☕ $3
+              💷 £3
             </Button>
             <Button
               variant="outline"
               className="rounded-full border-border"
               onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
-              ☕☕ $5
+              💷💷 £5
             </Button>
             <Button
               className="rounded-full bg-primary text-primary-foreground"
               onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
-              ☕☕☕ $10
+              💷💷💷 £10
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">Every sip counts 💚</p>
