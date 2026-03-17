@@ -347,10 +347,13 @@ export function useTimerEngine() {
   const pause = () => {
     setPauseCount((c) => c + 1);
     setIsRunning(false);
+    saveTimerState(null);
   };
 
   const reset = () => {
     setIsRunning(false);
+    saveTimerState(null);
+    endTimeRef.current = 0;
     setPauseCount(0);
     setPauseReasons([]);
     const duration = getModeDuration(mode, settings);
@@ -362,11 +365,14 @@ export function useTimerEngine() {
     setPauseCount((c) => c + 1);
     setPauseReasons((prev) => [...prev, reason]);
     setIsRunning(false);
+    saveTimerState(null);
   };
 
   const skip = () => {
     setIsRunning(false);
+    saveTimerState(null);
     handleTimerEnd();
+  };
   };
 
   const drinkWater = () => {
