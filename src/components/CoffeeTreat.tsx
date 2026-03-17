@@ -37,7 +37,7 @@ const CoffeeTreat = () => {
             <Button
               variant="outline"
               className="rounded-full border-border"
-              onClick={() => window.open("https://buymeacoffee.com", "_blank")}
+              onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
               ☕☕ $5
             </Button>
