@@ -142,7 +142,28 @@ const Timer = ({
           {formatTime(timeRemaining)}
         </span>
 
-        {/* Focusing Helper — pause reasons */}
+        {/* Short break suggestions */}
+        {mode === "shortBreak" && (
+          <div className="mt-2 flex flex-col gap-1 max-w-[180px]">
+            {SHORT_BREAK_SUGGESTIONS.map((item) => (
+              <div key={item.label} className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[220px]">
+                    <ul className="text-xs space-y-1">
+                      {item.tips.map((tip, i) => (
+                        <li key={i}>· {tip}</li>
+                      ))}
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            ))}
+          </div>
+        )}
         {pauseReasons.length > 0 && (
           <div className="mt-2 text-center max-w-[160px]">
             <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground font-medium">
