@@ -54,6 +54,36 @@ const INTERRUPTION_OPTIONS = [
   { label: "Other Interruption", reason: "Paused for other interruption" },
 ];
 
+const SHORT_BREAK_SUGGESTIONS = [
+  {
+    label: "Visual & Eye Relaxation",
+    tips: [
+      "Look out the window (focus on something far away)",
+      "Watch greenery (trees, plants, grass)",
+      "Sky gazing (clouds, horizon)",
+    ],
+  },
+  {
+    label: "Body Reset",
+    tips: [
+      "Neck rolls / shoulder rolls",
+      "Stand up + stretch arms overhead",
+      "10–15 squats or pushups",
+      "Walk around your room/office",
+    ],
+  },
+  {
+    label: "Breathing Control",
+    tips: [
+      "Breath in for 5 seconds",
+      "Hold it for 5 seconds",
+      "Exhale for 5 seconds",
+      "Cycle 3–5 times",
+      "Reduce stress and lower emotional tension",
+    ],
+  },
+];
+
 const Timer = ({
   mode,
   timeRemaining,
