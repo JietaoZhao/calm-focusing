@@ -1,7 +1,8 @@
 import { useState } from "react";
 import TimerRing from "./TimerRing";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
+import { Play, Pause, RotateCcw, SkipForward, Info } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
