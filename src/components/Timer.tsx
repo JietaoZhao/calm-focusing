@@ -3,12 +3,12 @@ import TimerRing from "./TimerRing";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export type TimerMode = "focus" | "shortBreak" | "longBreak";
 
