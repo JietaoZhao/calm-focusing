@@ -225,17 +225,35 @@ export function useTimerEngine() {
     }
   }, [playEndSound, sendNotification]);
 
-  // ─── Wall-clock timer: survives background tab throttling ───
+  // ─── Wall-clock timer: survives background tab throttling & tab discard ───
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning) {
+      // Clear persisted state when not running
+      saveTimerState(null);
+      return;
+    }
 
     // Set the absolute end time when we start running
-    endTimeRef.current = Date.now() + timeRemaining * 1000;
+    // If restored from storage, endTimeRef is already set correctly
+    if (endTimeRef.current <= Date.now()) {
+      endTimeRef.current = Date.now() + timeRemaining * 1000;
+    }
+
+    // Persist timer state so it survives tab discard
+    saveTimerState({
+      endTime: endTimeRef.current,
+      mode: modeRef.current,
+      totalTime,
+      completedSessions: completedSessionsRef.current,
+      pauseCount,
+      pauseReasons,
+    });
 
     const tick = () => {
       const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
       if (remaining <= 0) {
         setTimeRemaining(0);
+        saveTimerState(null);
         handleTimerEnd();
       } else {
         setTimeRemaining(remaining);
@@ -257,7 +275,6 @@ export function useTimerEngine() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-    // Only re-run when isRunning changes (not timeRemaining — that's handled by wall clock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, handleTimerEnd]);
 
