@@ -98,10 +98,28 @@ export function useTimerEngine() {
 
     const timer = setInterval(() => {
       if (waterDrank < settings.waterGlasses) {
+        // Gentle water drop sound
+        try {
+          const ctx = new AudioContext();
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.setValueAtTime(880, now);
+          osc.frequency.exponentialRampToValueAtTime(440, now + 0.3);
+          osc.type = "sine";
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now);
+          osc.stop(now + 0.6);
+        } catch {}
+
         toast({
           title: "💧 Time to hydrate!",
           description: `Glass ${waterDrank + 1} of ${settings.waterGlasses}`,
         });
+        sendNotification("💧 Time to hydrate!", `Glass ${waterDrank + 1} of ${settings.waterGlasses}`);
       }
     }, intervalMs);
 
