@@ -164,14 +164,14 @@ const Timer = ({
       </div>
 
       {/* Interruption Dialog */}
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent className="max-w-xs">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base">Focusing Helper</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm">
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-xs">
+          <DialogHeader>
+            <DialogTitle className="text-base">Focusing Helper</DialogTitle>
+            <DialogDescription className="text-sm">
               What difficulties did you encounter?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
           <div className="flex flex-col gap-2 mt-2">
             {INTERRUPTION_OPTIONS.map((option) => (
               <Button
@@ -189,8 +189,8 @@ const Timer = ({
               </Button>
             ))}
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
