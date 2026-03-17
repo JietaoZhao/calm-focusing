@@ -57,6 +57,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="flex flex-col items-center gap-3 pt-8">
         <CoffeeTreat />
+        <SuggestionForm />
         <p className="text-[10px] text-muted-foreground tracking-wider">
           Built with intention
         </p>
