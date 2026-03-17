@@ -91,17 +91,36 @@ function calculateWorkMinutes(settings: SettingsData): number {
 
 export function useTimerEngine() {
   const [settings, setSettings] = useState<SettingsData>(loadSettings);
-  const [mode, setMode] = useState<TimerMode>("focus");
-  const [timeRemaining, setTimeRemaining] = useState(() => getModeDuration("focus", loadSettings()));
-  const [totalTime, setTotalTime] = useState(() => getModeDuration("focus", loadSettings()));
-  const [isRunning, setIsRunning] = useState(false);
-  const [completedSessions, setCompletedSessions] = useState(0);
+
+  // Restore running timer from localStorage if the tab was discarded
+  const restoredState = useRef(loadTimerState());
+
+  const [mode, setMode] = useState<TimerMode>(() =>
+    restoredState.current?.mode ?? "focus"
+  );
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    if (restoredState.current) {
+      return Math.max(0, Math.round((restoredState.current.endTime - Date.now()) / 1000));
+    }
+    return getModeDuration("focus", loadSettings());
+  });
+  const [totalTime, setTotalTime] = useState(() =>
+    restoredState.current?.totalTime ?? getModeDuration("focus", loadSettings())
+  );
+  const [isRunning, setIsRunning] = useState(() => !!restoredState.current);
+  const [completedSessions, setCompletedSessions] = useState(() =>
+    restoredState.current?.completedSessions ?? 0
+  );
   const [waterDrank, setWaterDrank] = useState(loadWater);
-  const [pauseCount, setPauseCount] = useState(0);
-  const [pauseReasons, setPauseReasons] = useState<string[]>([]);
+  const [pauseCount, setPauseCount] = useState(() =>
+    restoredState.current?.pauseCount ?? 0
+  );
+  const [pauseReasons, setPauseReasons] = useState<string[]>(() =>
+    restoredState.current?.pauseReasons ?? []
+  );
 
   // Wall-clock refs for accurate background timing
-  const endTimeRef = useRef<number>(0); // timestamp when timer should end
+  const endTimeRef = useRef<number>(restoredState.current?.endTime ?? 0);
   const waterLastReminderRef = useRef<number>(Date.now());
 
   // Use refs for values needed in callbacks to avoid stale closures
