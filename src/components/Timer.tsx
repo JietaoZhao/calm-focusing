@@ -1,7 +1,8 @@
 import { useState } from "react";
 import TimerRing from "./TimerRing";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, SkipForward } from "lucide-react";
+import { Play, Pause, RotateCcw, SkipForward, Info } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,36 @@ const INTERRUPTION_OPTIONS = [
   { label: "Virtual Meeting", reason: "Paused for virtual meeting" },
   { label: "In-Person Meeting", reason: "Paused for in-person meeting" },
   { label: "Other Interruption", reason: "Paused for other interruption" },
+];
+
+const SHORT_BREAK_SUGGESTIONS = [
+  {
+    label: "Visual & Eye Relaxation",
+    tips: [
+      "Look out the window (focus on something far away)",
+      "Watch greenery (trees, plants, grass)",
+      "Sky gazing (clouds, horizon)",
+    ],
+  },
+  {
+    label: "Body Reset",
+    tips: [
+      "Neck rolls / shoulder rolls",
+      "Stand up + stretch arms overhead",
+      "10–15 squats or pushups",
+      "Walk around your room/office",
+    ],
+  },
+  {
+    label: "Breathing Control",
+    tips: [
+      "Breath in for 5 seconds",
+      "Hold it for 5 seconds",
+      "Exhale for 5 seconds",
+      "Cycle 3–5 times",
+      "Reduce stress and lower emotional tension",
+    ],
+  },
 ];
 
 const Timer = ({
@@ -111,7 +142,28 @@ const Timer = ({
           {formatTime(timeRemaining)}
         </span>
 
-        {/* Focusing Helper — pause reasons */}
+        {/* Short break suggestions */}
+        {mode === "shortBreak" && (
+          <div className="mt-2 flex flex-col gap-1 max-w-[180px]">
+            {SHORT_BREAK_SUGGESTIONS.map((item) => (
+              <div key={item.label} className="flex items-center gap-1">
+                <span className="text-[10px] text-muted-foreground">{item.label}</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="w-3 h-3 text-muted-foreground cursor-help shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="max-w-[220px]">
+                    <ul className="text-xs space-y-1">
+                      {item.tips.map((tip, i) => (
+                        <li key={i}>· {tip}</li>
+                      ))}
+                    </ul>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+            ))}
+          </div>
+        )}
         {pauseReasons.length > 0 && (
           <div className="mt-2 text-center max-w-[160px]">
             <span className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground font-medium">
