@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const WEB3FORMS_KEY = "YOUR_ACCESS_KEY_HERE";
+const WEB3FORMS_KEY = "633e65ec-e718-4c58-b08b-ef82df1cac99";
 
 const SuggestionForm = () => {
   const [open, setOpen] = useState(false);
