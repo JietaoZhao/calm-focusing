@@ -1,3 +1,3 @@
-# Welcome to your Lovable project
+# A Pomodoro and focusing helper. 
 
-TODO: Document your project here
+I casually used AI to create a Pomodoro timer. For self use and also open source to everyone.
