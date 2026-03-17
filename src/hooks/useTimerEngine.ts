@@ -202,12 +202,15 @@ export function useTimerEngine() {
     totalTime,
     isRunning,
     completedSessions,
-    waterDrank,
+    waterDrank: waterDrak,
+    pauseCount,
+    pauseReasons,
     start,
     pause,
     reset,
     skip,
     drinkWater,
+    pauseWithReason,
   };
 }
 
