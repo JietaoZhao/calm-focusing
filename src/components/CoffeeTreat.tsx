@@ -32,7 +32,7 @@ const CoffeeTreat = () => {
               className="rounded-full border-border"
               onClick={() => window.open("https://buymeacoffee.com/JettZ", "_blank")}
             >
-              ☕ $3
+              💷 £3
             </Button>
             <Button
               variant="outline"
