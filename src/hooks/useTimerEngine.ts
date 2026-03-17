@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 
 const STORAGE_KEY = "calm-settings";
 const WATER_STORAGE_KEY = "calm-water";
+const TIMER_STATE_KEY = "calm-timer-state";
 
 const defaultSettings: SettingsData = {
   mode: "simple",
@@ -43,6 +44,36 @@ function saveWater(count: number) {
   localStorage.setItem(WATER_STORAGE_KEY, JSON.stringify({ count, date: new Date().toDateString() }));
 }
 
+interface TimerState {
+  endTime: number; // absolute timestamp when timer ends
+  mode: TimerMode;
+  totalTime: number;
+  completedSessions: number;
+  pauseCount: number;
+  pauseReasons: string[];
+}
+
+function saveTimerState(state: TimerState | null) {
+  if (state) {
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+  } else {
+    localStorage.removeItem(TIMER_STATE_KEY);
+  }
+}
+
+function loadTimerState(): TimerState | null {
+  try {
+    const saved = localStorage.getItem(TIMER_STATE_KEY);
+    if (!saved) return null;
+    const state: TimerState = JSON.parse(saved);
+    // Only restore if the end time is in the future
+    if (state.endTime > Date.now()) return state;
+    // Expired — clean up
+    localStorage.removeItem(TIMER_STATE_KEY);
+  } catch {}
+  return null;
+}
+
 function getModeDuration(mode: TimerMode, settings: SettingsData): number {
   switch (mode) {
     case "focus": return settings.focusMinutes * 60;
@@ -60,17 +91,36 @@ function calculateWorkMinutes(settings: SettingsData): number {
 
 export function useTimerEngine() {
   const [settings, setSettings] = useState<SettingsData>(loadSettings);
-  const [mode, setMode] = useState<TimerMode>("focus");
-  const [timeRemaining, setTimeRemaining] = useState(() => getModeDuration("focus", loadSettings()));
-  const [totalTime, setTotalTime] = useState(() => getModeDuration("focus", loadSettings()));
-  const [isRunning, setIsRunning] = useState(false);
-  const [completedSessions, setCompletedSessions] = useState(0);
+
+  // Restore running timer from localStorage if the tab was discarded
+  const restoredState = useRef(loadTimerState());
+
+  const [mode, setMode] = useState<TimerMode>(() =>
+    restoredState.current?.mode ?? "focus"
+  );
+  const [timeRemaining, setTimeRemaining] = useState(() => {
+    if (restoredState.current) {
+      return Math.max(0, Math.round((restoredState.current.endTime - Date.now()) / 1000));
+    }
+    return getModeDuration("focus", loadSettings());
+  });
+  const [totalTime, setTotalTime] = useState(() =>
+    restoredState.current?.totalTime ?? getModeDuration("focus", loadSettings())
+  );
+  const [isRunning, setIsRunning] = useState(() => !!restoredState.current);
+  const [completedSessions, setCompletedSessions] = useState(() =>
+    restoredState.current?.completedSessions ?? 0
+  );
   const [waterDrank, setWaterDrank] = useState(loadWater);
-  const [pauseCount, setPauseCount] = useState(0);
-  const [pauseReasons, setPauseReasons] = useState<string[]>([]);
+  const [pauseCount, setPauseCount] = useState(() =>
+    restoredState.current?.pauseCount ?? 0
+  );
+  const [pauseReasons, setPauseReasons] = useState<string[]>(() =>
+    restoredState.current?.pauseReasons ?? []
+  );
 
   // Wall-clock refs for accurate background timing
-  const endTimeRef = useRef<number>(0); // timestamp when timer should end
+  const endTimeRef = useRef<number>(restoredState.current?.endTime ?? 0);
   const waterLastReminderRef = useRef<number>(Date.now());
 
   // Use refs for values needed in callbacks to avoid stale closures
@@ -137,6 +187,7 @@ export function useTimerEngine() {
   const handleTimerEnd = useCallback(() => {
     playEndSound();
     setIsRunning(false);
+    saveTimerState(null);
     setPauseCount(0);
     setPauseReasons([]);
 
@@ -175,17 +226,35 @@ export function useTimerEngine() {
     }
   }, [playEndSound, sendNotification]);
 
-  // ─── Wall-clock timer: survives background tab throttling ───
+  // ─── Wall-clock timer: survives background tab throttling & tab discard ───
   useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning) {
+      // Clear persisted state when not running
+      saveTimerState(null);
+      return;
+    }
 
     // Set the absolute end time when we start running
-    endTimeRef.current = Date.now() + timeRemaining * 1000;
+    // If restored from storage, endTimeRef is already set correctly
+    if (endTimeRef.current <= Date.now()) {
+      endTimeRef.current = Date.now() + timeRemaining * 1000;
+    }
+
+    // Persist timer state so it survives tab discard
+    saveTimerState({
+      endTime: endTimeRef.current,
+      mode: modeRef.current,
+      totalTime,
+      completedSessions: completedSessionsRef.current,
+      pauseCount,
+      pauseReasons,
+    });
 
     const tick = () => {
       const remaining = Math.round((endTimeRef.current - Date.now()) / 1000);
       if (remaining <= 0) {
         setTimeRemaining(0);
+        saveTimerState(null);
         handleTimerEnd();
       } else {
         setTimeRemaining(remaining);
@@ -207,7 +276,6 @@ export function useTimerEngine() {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-    // Only re-run when isRunning changes (not timeRemaining — that's handled by wall clock)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, handleTimerEnd]);
 
@@ -279,10 +347,13 @@ export function useTimerEngine() {
   const pause = () => {
     setPauseCount((c) => c + 1);
     setIsRunning(false);
+    saveTimerState(null);
   };
 
   const reset = () => {
     setIsRunning(false);
+    saveTimerState(null);
+    endTimeRef.current = 0;
     setPauseCount(0);
     setPauseReasons([]);
     const duration = getModeDuration(mode, settings);
@@ -294,11 +365,14 @@ export function useTimerEngine() {
     setPauseCount((c) => c + 1);
     setPauseReasons((prev) => [...prev, reason]);
     setIsRunning(false);
+    saveTimerState(null);
   };
 
   const skip = () => {
     setIsRunning(false);
+    saveTimerState(null);
     handleTimerEnd();
+  };
   };
 
   const drinkWater = () => {
