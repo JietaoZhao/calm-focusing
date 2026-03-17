@@ -44,6 +44,36 @@ function saveWater(count: number) {
   localStorage.setItem(WATER_STORAGE_KEY, JSON.stringify({ count, date: new Date().toDateString() }));
 }
 
+interface TimerState {
+  endTime: number; // absolute timestamp when timer ends
+  mode: TimerMode;
+  totalTime: number;
+  completedSessions: number;
+  pauseCount: number;
+  pauseReasons: string[];
+}
+
+function saveTimerState(state: TimerState | null) {
+  if (state) {
+    localStorage.setItem(TIMER_STATE_KEY, JSON.stringify(state));
+  } else {
+    localStorage.removeItem(TIMER_STATE_KEY);
+  }
+}
+
+function loadTimerState(): TimerState | null {
+  try {
+    const saved = localStorage.getItem(TIMER_STATE_KEY);
+    if (!saved) return null;
+    const state: TimerState = JSON.parse(saved);
+    // Only restore if the end time is in the future
+    if (state.endTime > Date.now()) return state;
+    // Expired — clean up
+    localStorage.removeItem(TIMER_STATE_KEY);
+  } catch {}
+  return null;
+}
+
 function getModeDuration(mode: TimerMode, settings: SettingsData): number {
   switch (mode) {
     case "focus": return settings.focusMinutes * 60;
