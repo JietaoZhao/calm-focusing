@@ -202,7 +202,7 @@ export function useTimerEngine() {
     totalTime,
     isRunning,
     completedSessions,
-    waterDrank: waterDrak,
+    waterDrank,
     pauseCount,
     pauseReasons,
     start,

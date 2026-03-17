@@ -28,10 +28,13 @@ const Index = () => {
           isRunning={engine.isRunning}
           completedSessions={engine.completedSessions}
           sessionsBeforeLong={engine.settings.sessionsBeforeLong}
+          pauseCount={engine.pauseCount}
+          pauseReasons={engine.pauseReasons}
           onStart={engine.start}
           onPause={engine.pause}
           onReset={engine.reset}
           onSkip={engine.skip}
+          onPauseWithReason={engine.pauseWithReason}
         />
 
         {/* Water Reminder */}
