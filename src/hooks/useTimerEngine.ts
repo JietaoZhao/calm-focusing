@@ -58,8 +58,10 @@ export function useTimerEngine() {
   const [totalTime, setTotalTime] = useState(() => getModeDuration("focus", loadSettings()));
   const [isRunning, setIsRunning] = useState(false);
   const [completedSessions, setCompletedSessions] = useState(0);
-  const [waterDrank, setWaterDrank] = useState(loadWater);
+  const [waterDrank, setWaterDrak] = useState(loadWater);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [pauseCount, setPauseCount] = useState(0);
+  const [pauseReasons, setPauseReasons] = useState<string[]>([]);
 
   // Persist settings
   useEffect(() => {
