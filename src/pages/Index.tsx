@@ -2,6 +2,7 @@ import Timer from "@/components/Timer";
 import Settings from "@/components/Settings";
 import WaterReminder from "@/components/WaterReminder";
 import CoffeeTreat from "@/components/CoffeeTreat";
+import SuggestionForm from "@/components/SuggestionForm";
 import { useTimerEngine } from "@/hooks/useTimerEngine";
 
 const Index = () => {
