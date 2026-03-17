@@ -125,6 +125,8 @@ export function useTimerEngine() {
     } catch {}
 
     setIsRunning(false);
+    setPauseCount(0);
+    setPauseReasons([]);
 
     if (mode === "focus") {
       const newCompleted = completedSessions + 1;
