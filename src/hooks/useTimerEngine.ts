@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 
 const STORAGE_KEY = "calm-settings";
 const WATER_STORAGE_KEY = "calm-water";
+const TIMER_STATE_KEY = "calm-timer-state";
 
 const defaultSettings: SettingsData = {
   mode: "simple",
