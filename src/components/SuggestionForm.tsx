@@ -48,6 +48,7 @@ const SuggestionForm = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           access_key: WEB3FORMS_KEY,
+          botcheck: false,
           subject: `Calm Suggestion from ${trimmedName}`,
           from_name: trimmedName,
           email: trimmedEmail,
