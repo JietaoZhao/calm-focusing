@@ -184,7 +184,13 @@ export function useTimerEngine() {
     }
   }, [isRunning, mode]);
 
-  const start = () => setIsRunning(true);
+  const start = () => {
+    // Request notification permission on first start
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+    setIsRunning(true);
+  };
   const pause = () => {
     setPauseCount((c) => c + 1);
     setIsRunning(false);
